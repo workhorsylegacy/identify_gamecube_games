@@ -5,7 +5,7 @@
 # A module for identifying Sony Playstation 2 games with Python 2 & 3
 # It uses a MIT style license
 # It is hosted at: https://github.com/workhorsy/identify_gamecube_games
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -13,10 +13,10 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included
 # in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -29,22 +29,46 @@
 import sys, os
 import json
 
+IS_PY2 = sys.version_info[0] == 2
+
 # Load the databases
 with open('db_gamecube_official_us.json', 'rb') as f:
-	db_gamecube_official_us = json.loads(f.read())
+	db_gamecube_official_us = json.loads(f.read().decode('utf8'))
 
 with open('db_gamecube_official_au.json', 'rb') as f:
-	db_gamecube_official_au = json.loads(f.read())
+	db_gamecube_official_au = json.loads(f.read().decode('utf8'))
 
 with open('db_gamecube_official_eu.json', 'rb') as f:
-	db_gamecube_official_eu = json.loads(f.read())
+	db_gamecube_official_eu = json.loads(f.read().decode('utf8'))
 
 with open('db_gamecube_official_jp.json', 'rb') as f:
-	db_gamecube_official_jp = json.loads(f.read())
+	db_gamecube_official_jp = json.loads(f.read().decode('utf8'))
 
 with open('db_gamecube_official_ko.json', 'rb') as f:
-	db_gamecube_official_ko = json.loads(f.read())
+	db_gamecube_official_ko = json.loads(f.read().decode('utf8'))
 
+# Convert the keys from strings to bytes
+dbs = [
+	db_gamecube_official_us,
+	db_gamecube_official_au,
+	db_gamecube_official_eu,
+	db_gamecube_official_jp,
+	db_gamecube_official_ko,
+]
+for db in dbs:
+	keys = db.keys()
+	for key in keys:
+		# Get the value
+		val = db[key]
+
+		# Remove the unicode key
+		db.pop(key)
+
+		# Add the bytes key and value
+		if IS_PY2:
+			db[bytes(key)] = val
+		else:
+			db[bytes(key, 'utf-8')] = val
 
 def get_gamecube_game_info(file_name):
 	# Skip if not an ISO
@@ -59,37 +83,36 @@ def get_gamecube_game_info(file_name):
 		'''
 		f.seek(0)
 		serial_number = f.read(4)
-		#print(serial_number)
 
 		f.seek(32)
-		sloppy_title = f.read(32).strip(chr(0))
+		sloppy_title = f.read(32).strip(b'\0')
 
 	# Get the region from the game code
-	region = serial_number[3]
-	if region == 'D':
-		region = 'EUR'
-	elif region == 'E':
-		region = 'USA'
-	elif region == 'F':
-		region = 'EUR'
-	elif region == 'I':
-		region = 'EUR'
-	elif region == 'J':
-		region = 'JPN'
-	elif region == 'K':
-		region = 'KOR'
-	elif region == 'P':
-		region = 'EUR'
-	elif region == 'R':
-		region = 'EUR'
-	elif region == 'S':
-		region = 'EUR'
-	elif region == 'T':
-		region = 'TAI'
-	elif region == 'U':
-		region = 'AUS'
+	region = serial_number[3:4]
+	if region == b'D':
+		region = b'EUR'
+	elif region == b'E':
+		region = b'USA'
+	elif region == b'F':
+		region = b'EUR'
+	elif region == b'I':
+		region = b'EUR'
+	elif region == b'J':
+		region = b'JPN'
+	elif region == b'K':
+		region = b'KOR'
+	elif region == b'P':
+		region = b'EUR'
+	elif region == b'R':
+		region = b'EUR'
+	elif region == b'S':
+		region = b'EUR'
+	elif region == b'T':
+		region = b'TAI'
+	elif region == b'U':
+		region = b'AUS'
 
-	serial_number = 'DOL-{0}-{1}'.format(serial_number, region)
+	serial_number = b'DOL-' + serial_number + b'-' + region
 
 	# Look up the proper name and vague region
 	title, vague_region = None, None
@@ -136,6 +159,3 @@ for root, dirs, files in os.walk(games):
 		except:
 			print("Failed on \"{0}\"".format(entry))
 #'''
-
-
-		
